@@ -6,38 +6,38 @@ import Room from './models/Room.js';
 let useMongo = false;
 const memory = new Map();
 
-const DEFAULT_ROOMS = [
-  { name: 'The Lounge', type: 'video', maxParticipants: 6 },
-  { name: 'Study Hall', type: 'audio', maxParticipants: 8 },
-  { name: 'One-on-One', type: 'video', maxParticipants: 2 },
-  { name: 'Music & Chill', type: 'audio', maxParticipants: 4 },
-];
-
 function serialize(doc) {
   return {
     id: String(doc._id ?? doc.id),
     name: doc.name,
     type: doc.type,
     maxParticipants: doc.maxParticipants,
-    permanent: doc.permanent,
     createdBy: doc.createdBy,
     createdAt: doc.createdAt,
   };
 }
 
-export async function initRooms(mongoConnected) {
+export function initRooms(mongoConnected) {
   useMongo = mongoConnected;
-  const count = useMongo ? await Room.countDocuments({ permanent: true }) : 0;
-  if (count === 0) {
-    for (const room of DEFAULT_ROOMS) await createRoom({ ...room, permanent: true, createdBy: 'FreeCall' });
+}
+
+// Only a hash of the owner token is stored, so a database leak can't be used to delete rooms.
+export function hashToken(token) {
+  return crypto.createHash('sha256').update(String(token)).digest('hex');
+}
+
+export async function getOwnerTokenHash(id) {
+  if (useMongo) {
+    if (!mongoose.isValidObjectId(id)) return null;
+    const doc = await Room.findById(id).select('+ownerTokenHash').lean();
+    return doc?.ownerTokenHash ?? null;
   }
+  return memory.get(id)?.ownerTokenHash ?? null;
 }
 
 export async function listRooms() {
-  if (useMongo) return (await Room.find().sort({ permanent: -1, createdAt: 1 }).lean()).map(serialize);
-  return [...memory.values()]
-    .sort((a, b) => b.permanent - a.permanent || a.createdAt - b.createdAt)
-    .map(serialize);
+  if (useMongo) return (await Room.find().sort({ createdAt: -1 }).lean()).map(serialize);
+  return [...memory.values()].sort((a, b) => b.createdAt - a.createdAt).map(serialize);
 }
 
 export async function getRoom(id) {
@@ -57,7 +57,6 @@ export async function createRoom(data) {
     id: crypto.randomUUID(),
     type: 'video',
     maxParticipants: 4,
-    permanent: false,
     createdBy: 'Anonymous',
     ...data,
     createdAt: new Date(),

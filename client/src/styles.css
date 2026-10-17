@@ -70,7 +70,9 @@ button, input { font: inherit; color: inherit; }
   transition: border-color .15s, transform .15s;
 }
 .room-card:hover { border-color: #3a4263; transform: translateY(-2px); }
-.room-card__head { display: flex; gap: 6px; }
+.room-card__head { display: flex; gap: 6px; align-items: center; }
+.room-card__delete { margin-left: auto; }
+.room-card__delete:hover { color: var(--danger); }
 .room-card__title { font-size: 18px; }
 .room-card__meta { margin: -8px 0 0; font-size: 13px; color: var(--muted); }
 .room-card__people { display: flex; align-items: center; gap: 4px; min-height: 28px; font-size: 13px; }

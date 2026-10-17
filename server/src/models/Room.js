@@ -9,7 +9,7 @@ const roomSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true, maxlength: 40 },
     type: { type: String, enum: ROOM_TYPES, default: 'video' },
     maxParticipants: { type: Number, min: MIN_PARTICIPANTS, max: MAX_PARTICIPANTS, default: 4 },
-    permanent: { type: Boolean, default: false },
+    ownerTokenHash: { type: String, required: true, select: false },
     createdBy: { type: String, trim: true, maxlength: 30, default: 'Anonymous' },
   },
   { timestamps: true },

@@ -16,7 +16,7 @@ if (!health.body.ok) fail('health check');
 ok('health check');
 
 const rooms = await json('/api/rooms');
-if (!Array.isArray(rooms.body) || rooms.body.length === 0) fail('default rooms are listed');
+if (!Array.isArray(rooms.body)) fail('lists rooms');
 ok(`lists ${rooms.body.length} rooms`);
 
 const bad = await json('/api/rooms', { method: 'POST', body: JSON.stringify({ name: '', maxParticipants: 50 }) });
@@ -27,9 +27,15 @@ const created = await json('/api/rooms', {
   method: 'POST',
   body: JSON.stringify({ name: 'CI room', type: 'audio', maxParticipants: 2, createdBy: 'CI' }),
 });
-if (created.status !== 201) fail('creates room');
+if (created.status !== 201 || !created.body.ownerToken) fail('creates room with owner token');
 const room = created.body;
-ok('creates room');
+ok('creates room with owner token');
+
+const listed = await json('/api/rooms');
+if (JSON.stringify(listed.body).includes('ownerToken') || JSON.stringify(listed.body).includes(room.ownerToken)) {
+  fail('room list never exposes owner tokens');
+}
+ok('room list hides owner tokens');
 
 const connect = () => io(URL, { transports: ['websocket'] });
 const join = (s, name) => new Promise((r) => s.emit('join-room', { roomId: room.id, name, audio: true }, r));
@@ -60,6 +66,17 @@ const left = once(a, 'peer-left');
 b.disconnect();
 if ((await left).id !== rb.self.id) fail('leave propagated');
 ok('leave propagated');
+
+const del = (token) => fetch(`${URL}/api/rooms/${room.id}`, { method: 'DELETE', headers: token ? { 'X-Owner-Token': token } : {} });
+if ((await del()).status !== 403) fail('delete without token is rejected');
+if ((await del('not-the-owner')).status !== 403) fail('delete with wrong token is rejected');
+ok('only the creator can delete');
+
+const kicked = once(a, 'room-deleted');
+if ((await del(room.ownerToken)).status !== 204) fail('creator deletes room');
+await kicked;
+if ((await json(`/api/rooms/${room.id}`)).status !== 404) fail('deleted room is gone');
+ok('creator deletes room, participants are notified');
 
 a.disconnect();
 c.disconnect();

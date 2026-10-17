@@ -1,6 +1,6 @@
-// Broadcasts the room list to every connected client and removes stale user-created rooms.
+// Broadcasts the room list to every connected client and removes rooms that stay empty.
 import { deleteRoom, getRoom, listRooms } from './roomStore.js';
-import { countParticipants, getParticipants } from './presence.js';
+import { clearRoom, countParticipants, getParticipants } from './presence.js';
 
 const EMPTY_ROOM_TTL_MS = Number(process.env.EMPTY_ROOM_TTL_MINUTES || 5) * 60 * 1000;
 const cleanupTimers = new Map();
@@ -34,7 +34,6 @@ export function cancelCleanup(roomId) {
 }
 
 export function scheduleCleanup(room) {
-  if (room.permanent) return;
   cancelCleanup(room.id);
   const timer = setTimeout(async () => {
     cleanupTimers.delete(room.id);
@@ -49,6 +48,21 @@ export async function scheduleCleanupForEmptyRooms() {
   for (const room of await listRooms()) {
     if (countParticipants(room.id) === 0) scheduleCleanup(room);
   }
+}
+
+// Deletes a room and sends anyone still in it back to the lobby.
+export async function removeRoom(roomId) {
+  cancelCleanup(roomId);
+  await deleteRoom(roomId);
+  if (io) {
+    io.to(roomId).emit('room-deleted', { roomId });
+    for (const socket of await io.in(roomId).fetchSockets()) {
+      socket.data.roomId = null;
+      socket.leave(roomId);
+    }
+  }
+  clearRoom(roomId);
+  await broadcastRooms();
 }
 
 export { getRoom };

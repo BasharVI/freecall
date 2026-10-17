@@ -23,7 +23,7 @@ Run the smoke tests against any server with `npm run smoke --prefix client -- <s
 - Create rooms: name, **video** or **audio-only**, and a participant limit (2–8)
 - Pre-join screen with camera preview and mic/camera toggles
 - In-call: mute, camera on/off, screen sharing, speaking indicator, invite link
-- Empty user-created rooms are cleaned up automatically (featured rooms are permanent)
+- Room creators can delete their own rooms (anyone still in the call is sent back to the lobby); rooms left empty for 5 minutes are removed automatically
 
 ## How calling works
 

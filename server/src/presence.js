@@ -31,3 +31,7 @@ export function removeParticipant(roomId, socketId) {
   if (room.size === 0) rooms.delete(roomId);
   return room.size;
 }
+
+export function clearRoom(roomId) {
+  rooms.delete(roomId);
+}

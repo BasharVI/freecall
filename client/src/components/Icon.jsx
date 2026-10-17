@@ -11,6 +11,7 @@ const PATHS = {
   link: 'M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1',
   back: 'M15 18l-6-6 6-6',
   x: 'M6 6l12 12M18 6L6 18',
+  trash: 'M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3',
 };
 
 export default function Icon({ name, size = 20 }) {

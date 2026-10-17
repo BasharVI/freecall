@@ -187,10 +187,10 @@ export default function Room() {
   if (call.status === 'error') {
     return (
       <div className="center-screen">
-        <h2>Couldn’t join the call</h2>
+        <h2>{call.error.includes('deleted') ? 'Call ended' : 'Couldn’t join the call'}</h2>
         <p className="muted">{call.error}</p>
         <div className="row">
-          <button className="btn btn--ghost" onClick={retry}>Try again</button>
+          {!call.error.includes('deleted') && <button className="btn btn--ghost" onClick={retry}>Try again</button>}
           <Link className="btn btn--primary" to="/">Back to lobby</Link>
         </div>
       </div>

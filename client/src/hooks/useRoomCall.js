@@ -124,6 +124,11 @@ export function useRoomCall({ roomId, name, localStream, iceServers, mediaState,
     const onPeerJoined = (p) => upsertPeer(p.id, p);
     const onPeerUpdated = (p) => upsertPeer(p.id, p);
     const onPeerLeft = ({ id }) => dropPeer(id);
+    const onRoomDeleted = () => {
+      joined = false;
+      setStatus('error');
+      setError('This room was deleted by its creator.');
+    };
     const onDisconnect = () => {
       joined = false;
       setStatus('error');
@@ -135,6 +140,7 @@ export function useRoomCall({ roomId, name, localStream, iceServers, mediaState,
     socket.on('peer-updated', onPeerUpdated);
     socket.on('peer-left', onPeerLeft);
     socket.on('disconnect', onDisconnect);
+    socket.on('room-deleted', onRoomDeleted);
 
     socket.emit('join-room', { roomId, name, ...mediaStateRef.current }, (res) => {
       if (!active) {
@@ -165,6 +171,7 @@ export function useRoomCall({ roomId, name, localStream, iceServers, mediaState,
       socket.off('peer-updated', onPeerUpdated);
       socket.off('peer-left', onPeerLeft);
       socket.off('disconnect', onDisconnect);
+      socket.off('room-deleted', onRoomDeleted);
       for (const { pc } of connections.current.values()) pc.close();
       connections.current.clear();
       setPeers({});

@@ -61,7 +61,7 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: CLIENT_ORIGIN } });
 
 const mongoConnected = await connectDB();
-await initRooms(mongoConnected);
+initRooms(mongoConnected);
 initLobby(io);
 registerSocketHandlers(io);
 await scheduleCleanupForEmptyRooms();
