@@ -2,6 +2,23 @@
 
 Room-based video & audio calling built on the MERN stack (MongoDB, Express, React, Node) with **WebRTC**.
 
+**Live:** https://freecall-seven.vercel.app · API: https://freecall-api.onrender.com
+
+## Deployment & CI/CD
+
+| Part | Host | Deploys when |
+| --- | --- | --- |
+| Frontend (`client/`) | Vercel project `freecall`, root dir `client` | every push to `master` (PRs get preview URLs) |
+| Backend (`server/`) | Render web service `freecall-api` (Singapore, free) | every push to `master` |
+| Database | MongoDB Atlas `Cluster0`, db `freecall` | n/a |
+| CI | GitHub Actions `.github/workflows/ci.yml` | every push / PR to `master`: build + API & signaling smoke tests |
+
+Config lives in each platform, not in the repo:
+- Vercel: `VITE_SERVER_URL=https://freecall-api.onrender.com`
+- Render: `MONGODB_URI`, `CLIENT_ORIGIN=https://freecall-seven.vercel.app,http://localhost:5173`, `NODE_VERSION=22`
+
+Run the smoke tests against any server with `npm run smoke --prefix client -- <server-url>`.
+
 - Browse rooms in a live-updating lobby (participant counts and avatars update in real time)
 - Create rooms: name, **video** or **audio-only**, and a participant limit (2–8)
 - Pre-join screen with camera preview and mic/camera toggles
