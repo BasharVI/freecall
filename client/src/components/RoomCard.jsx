@@ -1,6 +1,6 @@
 import Icon from './Icon.jsx';
 
-export default function RoomCard({ room, onJoin, onDelete }) {
+export default function RoomCard({ room, onJoin, onDelete, onShare }) {
   const full = room.participantCount >= room.maxParticipants;
   const fillPct = (room.participantCount / room.maxParticipants) * 100;
 
@@ -12,11 +12,16 @@ export default function RoomCard({ room, onJoin, onDelete }) {
           {room.type === 'video' ? 'Video' : 'Audio'}
         </span>
         {onDelete && <span className="badge badge--muted">Your room</span>}
-        {onDelete && (
-          <button className="icon-btn room-card__delete" onClick={() => onDelete(room)} title="Delete room" aria-label="Delete room">
-            <Icon name="trash" size={18} />
+        <div className="room-card__actions">
+          <button className="icon-btn" onClick={() => onShare(room)} title="Share room link" aria-label="Share room link">
+            <Icon name="share" size={18} />
           </button>
-        )}
+          {onDelete && (
+            <button className="icon-btn icon-btn--danger" onClick={() => onDelete(room)} title="Delete room" aria-label="Delete room">
+              <Icon name="trash" size={18} />
+            </button>
+          )}
+        </div>
       </header>
 
       <h3 className="room-card__title">{room.name}</h3>

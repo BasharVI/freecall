@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, getSavedName, saveName } from '../api.js';
 import { getSocket } from '../socket.js';
+import { shareRoom } from '../share.js';
 import { useLocalMedia } from '../hooks/useLocalMedia.js';
 import { useRoomCall } from '../hooks/useRoomCall.js';
 import ParticipantTile from '../components/ParticipantTile.jsx';
@@ -23,6 +24,11 @@ export default function Room() {
   const [camOn, setCamOn] = useState(true);
   const [screenTrack, setScreenTrack] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [slowLoad, setSlowLoad] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setSlowLoad(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const isVideoRoom = roomInfo?.type === 'video';
   const mediaRequest = useMemo(() => (roomInfo ? { video: isVideoRoom } : null), [roomInfo != null, isVideoRoom]); // eslint-disable-line
@@ -32,12 +38,16 @@ export default function Room() {
 
   // Room details + live participant count while on the pre-join screen.
   useEffect(() => {
-    api.getRoom(roomId).then(setRoomInfo).catch((err) => setLoadError(err.message));
+    api.getRoom(roomId).then(setRoomInfo).catch((err) =>
+      setLoadError(err.message === 'Room not found'
+        ? 'This room doesn’t exist anymore. Its creator may have deleted it, or it was removed after staying empty.'
+        : err.message));
     api.iceServers().then(setIceServers).catch(() => setIceServers(DEFAULT_ICE));
     const socket = getSocket();
     const onRooms = (rooms) => {
       const match = rooms.find((r) => r.id === roomId);
       if (match) setRoomInfo(match);
+      else setLoadError((prev) => prev || 'This room was deleted by its creator.');
     };
     socket.on('rooms', onRooms);
     return () => socket.off('rooms', onRooms);
@@ -89,10 +99,10 @@ export default function Room() {
     }
   }
 
-  async function copyLink() {
-    await navigator.clipboard?.writeText(window.location.href);
+  async function share() {
+    if ((await shareRoom(roomInfo)) !== 'copied') return;
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setTimeout(() => setCopied(false), 1800);
   }
 
   function join(e) {
@@ -104,6 +114,11 @@ export default function Room() {
   function retry() {
     setStage('prejoin');
   }
+
+  // Someone took the last spot just before us: wait on the pre-join screen instead of an error page.
+  useEffect(() => {
+    if (call.status === 'error' && call.error.includes('full')) setStage('prejoin');
+  }, [call.status, call.error]);
 
   const localDisplayStream = useMemo(
     () => (screenTrack ? new MediaStream([screenTrack, ...(stream?.getAudioTracks() ?? [])]) : stream),
@@ -119,7 +134,14 @@ export default function Room() {
       </div>
     );
   }
-  if (!roomInfo) return <div className="center-screen muted">Loading room…</div>;
+  if (!roomInfo) {
+    return (
+      <div className="center-screen muted">
+        <p>Loading room…</p>
+        {slowLoad && <p className="hint">Waking up the server — the first visit can take up to a minute.</p>}
+      </div>
+    );
+  }
 
   const localTile = (
     <ParticipantTile
@@ -170,12 +192,23 @@ export default function Room() {
             </p>
             <label className="field">
               <span>Your name</span>
-              <input value={name} maxLength={30} onChange={(e) => setName(e.target.value)} placeholder="Display name" required />
+              <input value={name} maxLength={30} onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your name to join" autoFocus={!name} required />
             </label>
             {mediaError && <p className="warning">{mediaError}</p>}
-            {call.error && <p className="error">{call.error}</p>}
+            {full ? (
+              <p className="warning">
+                This room is full ({roomInfo.maxParticipants}/{roomInfo.maxParticipants}). Keep this page open — the Join
+                button turns on as soon as someone leaves.
+              </p>
+            ) : (
+              call.error && !call.error.includes('full') && <p className="error">{call.error}</p>
+            )}
             <button className="btn btn--primary btn--block" disabled={full || mediaLoading || !name.trim()}>
-              {full ? 'Room is full' : 'Join now'}
+              {full ? 'Room is full' : !name.trim() ? 'Enter your name to join' : 'Join now'}
+            </button>
+            <button type="button" className="btn btn--ghost btn--block" onClick={share}>
+              <Icon name="share" size={16} /> {copied ? 'Link copied!' : 'Share room link'}
             </button>
           </form>
         </div>
@@ -210,8 +243,8 @@ export default function Room() {
             {call.status === 'joining' ? 'Joining…' : `${total}/${roomInfo.maxParticipants} in call`}
           </span>
         </div>
-        <button className="btn btn--ghost btn--sm" onClick={copyLink}>
-          <Icon name="link" size={16} /> {copied ? 'Copied!' : 'Copy invite link'}
+        <button className="btn btn--ghost btn--sm" onClick={share}>
+          <Icon name="share" size={16} /> {copied ? 'Link copied!' : 'Share link'}
         </button>
       </header>
 

@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, forgetOwnerToken, getOwnerToken, getSavedName, saveName, saveOwnerToken } from '../api.js';
 import { getSocket } from '../socket.js';
+import { shareRoom } from '../share.js';
+import Toast from '../components/Toast.jsx';
 import CreateRoomModal from '../components/CreateRoomModal.jsx';
 import RoomCard from '../components/RoomCard.jsx';
 import Icon from '../components/Icon.jsx';
@@ -20,6 +22,8 @@ export default function Lobby() {
   const [filter, setFilter] = useState('all');
   const [name, setName] = useState(getSavedName);
   const [showCreate, setShowCreate] = useState(false);
+  const [toast, setToast] = useState('');
+  const clearToast = useCallback(() => setToast(''), []);
 
   useEffect(() => {
     const socket = getSocket();
@@ -39,6 +43,11 @@ export default function Lobby() {
     const room = await api.createRoom({ ...data, createdBy: name || 'Anonymous' });
     saveOwnerToken(room.id, room.ownerToken);
     navigate(`/room/${room.id}`);
+  }
+
+  async function share(room) {
+    const result = await shareRoom(room);
+    if (result === 'copied') setToast(`Link to "${room.name}" copied`);
   }
 
   async function deleteRoom(room) {
@@ -108,11 +117,13 @@ export default function Lobby() {
               room={room}
               onJoin={(r) => navigate(`/room/${r.id}`)}
               onDelete={getOwnerToken(room.id) ? deleteRoom : undefined}
+              onShare={share}
             />
           ))}
         </div>
       )}
 
+      <Toast message={toast} onDone={clearToast} />
       {showCreate && <CreateRoomModal onClose={() => setShowCreate(false)} onCreate={createRoom} />}
     </div>
   );

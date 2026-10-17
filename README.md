@@ -22,7 +22,8 @@ Run the smoke tests against any server with `npm run smoke --prefix client -- <s
 - Browse rooms in a live-updating lobby (participant counts and avatars update in real time)
 - Create rooms: name, **video** or **audio-only**, and a participant limit (2–8)
 - Pre-join screen with camera preview and mic/camera toggles
-- In-call: mute, camera on/off, screen sharing, speaking indicator, invite link
+- Share any room by link (native share sheet on phones, copy on desktop); people opening the link enter their name and join, or wait on the join screen until a full room has a free spot
+- In-call: mute, camera on/off, screen sharing, speaking indicator
 - Room creators can delete their own rooms (anyone still in the call is sent back to the lobby); rooms left empty for 5 minutes are removed automatically
 
 ## How calling works
