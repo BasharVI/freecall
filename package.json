@@ -1,0 +1,18 @@
+{
+  "name": "freecall",
+  "version": "1.0.0",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "description": "Room-based video & audio calling (MERN + WebRTC)",
+  "scripts": {
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently -n server,client -c blue,magenta \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix client",
+    "start": "npm start --prefix server",
+    "serve": "npm run build && npm start",
+    "tunnel": "ngrok http 5000"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
